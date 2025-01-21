@@ -625,4 +625,5 @@ if __name__ == '__main__':
     check_expired_posts()
     # 每天检查一次不活跃用户
     scheduler.add_job(check_inactive_users, 'interval', days=1)
-    app.run(debug=True)
+    # 绑定到所有网络接口，允许局域网访问
+    app.run(host='0.0.0.0', port=5000, debug=True)
