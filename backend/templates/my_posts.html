@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>我的分享</h2>
+
+    <!-- 已通过的账号 -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">已通过的账号</h4>
+        </div>
+        <div class="card-body">
+            {% if approved_posts %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>账号</th>
+                            <th>密码</th>
+                            <th>备注</th>
+                            <th>到期时间</th>
+                            <th>审核时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in approved_posts %}
+                        <tr>
+                            <td>{{ post.account_name }}</td>
+                            <td>{{ post.password }}</td>
+                            <td>{{ post.content }}</td>
+                            <td>
+                                <span class="badge {% if '已过期' in post.remaining_time %}bg-danger{% else %}bg-success{% endif %}">
+                                    {{ post.remaining_time }}
+                                </span>
+                            </td>
+                            <td>{{ post.approved_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">暂无已通过的账号</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 待审核的账号 -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0">待审核的账号</h4>
+        </div>
+        <div class="card-body">
+            {% if pending_posts %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>账号</th>
+                            <th>密码</th>
+                            <th>备注</th>
+                            <th>发布时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in pending_posts %}
+                        <tr>
+                            <td>{{ post.account_name }}</td>
+                            <td>{{ post.password }}</td>
+                            <td>{{ post.content }}</td>
+                            <td>{{ post.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">暂无待审核的账号</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 被拒绝的账号 -->
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">被拒绝的账号</h4>
+        </div>
+        <div class="card-body">
+            {% if rejected_posts %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>账号</th>
+                            <th>密码</th>
+                            <th>备注</th>
+                            <th>发布时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in rejected_posts %}
+                        <tr>
+                            <td>{{ post.account_name }}</td>
+                            <td>{{ post.password }}</td>
+                            <td>{{ post.content }}</td>
+                            <td>{{ post.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">暂无被拒绝的账号</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

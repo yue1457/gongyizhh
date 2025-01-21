@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="text-center mb-4">账号管理</h1>
+
+<div class="row">
+    <div class="col-12">
+        <h3>有效账号 ({{ valid_posts|length }}个)</h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>平台</th>
+                        <th>账号</th>
+                        <th>密码</th>
+                        <th>到期时间</th>
+                        <th>剩余时间</th>
+                        <th>分享者</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in valid_posts %}
+                    <tr>
+                        <td><span class="badge bg-primary">{{ post.platform }}</span></td>
+                        <td>{{ post.account_name }}</td>
+                        <td>{{ post.password }}</td>
+                        <td>{{ post.expire_date }}</td>
+                        <td>{{ post.remaining_time }}</td>
+                        <td>{{ post.author }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" 
+                                  onsubmit="return confirm('确定要删除这个账号吗？');" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h3>已过期账号 ({{ expired_posts|length }}个)</h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>平台</th>
+                        <th>账号</th>
+                        <th>密码</th>
+                        <th>到期时间</th>
+                        <th>过期时长</th>
+                        <th>分享者</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in expired_posts %}
+                    <tr class="table-danger">
+                        <td><span class="badge bg-secondary">{{ post.platform }}</span></td>
+                        <td>{{ post.account_name }}</td>
+                        <td>{{ post.password }}</td>
+                        <td>{{ post.expire_date }}</td>
+                        <td>{{ post.expired_time }}</td>
+                        <td>{{ post.author }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

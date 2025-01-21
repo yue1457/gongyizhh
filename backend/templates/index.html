@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if current_user.is_authenticated and current_user.is_admin and stats %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">今日数据</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3>{{ stats.today.total_visits }}</h3>
+                                <p class="text-muted mb-0">总访问量</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3>{{ stats.today.unique_users }}</h3>
+                                <p class="text-muted mb-0">活跃用户</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">最近7天数据</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="weeklyStats" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="text-center">一同看账号分享</h1>
+            {% if current_user.is_authenticated %}
+            <div class="text-center">
+                <a href="{{ url_for('new_post') }}" class="btn btn-primary">分享账号</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            {% if not current_user.is_authenticated %}
+            <div class="alert alert-info text-center" role="alert">
+                请 <a href="{{ url_for('login') }}">登录</a> 后查看账号密码
+            </div>
+            {% endif %}
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>账号</th>
+                            <th>密码</th>
+                            <th>备注</th>
+                            <th>到期时间</th>
+                            <th>分享时间</th>
+                            <th>分享者</th>
+                            {% if current_user.is_authenticated and current_user.is_admin %}
+                            <th>操作</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in posts %}
+                        <tr>
+                            <td>
+                                {% if current_user.is_authenticated %}
+                                    {% if current_user.is_admin %}
+                                        {{ post.account_name }}
+                                    {% else %}
+                                        <span class="account-info">*****</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="account-info">*****</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if current_user.is_authenticated %}
+                                    {% if current_user.is_admin %}
+                                        {{ post.password }}
+                                    {% else %}
+                                        <span class="password-info">*****</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="password-info">*****</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ post.content or '无' }}</td>
+                            <td>
+                                {% if current_user.is_authenticated and current_user.is_admin %}
+                                    {{ post.expire_date }}
+                                {% else %}
+                                    {{ post.remaining_time }}
+                                {% endif %}
+                            </td>
+                            <td>{{ post.created_at }}</td>
+                            <td>{{ post.author }}</td>
+                            {% if current_user.is_authenticated and current_user.is_admin %}
+                            <td>
+                                <form action="{{ url_for('delete_post', post_id=post.id) }}" method="POST" 
+                                      onsubmit="return confirm('确定要删除这个账号吗？');" style="display: inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        <tr class="view-btn-row">
+                            <td colspan="{% if current_user.is_authenticated and current_user.is_admin %}7{% else %}6{% endif %}" class="text-center">
+                                {% if current_user.is_authenticated %}
+                                    {% if not current_user.is_admin %}
+                                    <button class="btn btn-primary view-btn" type="button" 
+                                            data-account="{{ post.account_name }}" 
+                                            data-password="{{ post.password }}"
+                                            data-post-id="{{ post.id }}">
+                                        点击查看账号密码
+                                    </button>
+                                    <button class="btn btn-secondary copy-account-btn" style="display: none;">
+                                        复制账号
+                                    </button>
+                                    <button class="btn btn-secondary copy-password-btn" style="display: none;">
+                                        复制密码
+                                    </button>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{{ url_for('login') }}" class="btn btn-primary">登录后查看</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_authenticated and current_user.is_admin and stats %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var ctx = document.getElementById('weeklyStats').getContext('2d');
+    var weeklyStats = {{ stats.weekly | tojson }};
+    
+    // 反转数据以按日期升序显示
+    weeklyStats.reverse();
+    
+    var dates = weeklyStats.map(function(item) {
+        return item.date.slice(5);  // 只显示月-日
+    });
+    var visits = weeklyStats.map(function(item) {
+        return item.total_visits;
+    });
+    var users = weeklyStats.map(function(item) {
+        return item.unique_users;
+    });
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [{
+                label: '总访问量',
+                data: visits,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }, {
+                label: '活跃用户',
+                data: users,
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
+
+{% if current_user.is_authenticated and not current_user.is_admin %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 防止右键菜单和文本选择
+    document.addEventListener('contextmenu', function(e) {
+        if (e.target.classList.contains('account-info') || 
+            e.target.classList.contains('password-info')) {
+            e.preventDefault();
+        }
+    });
+    
+    document.addEventListener('selectstart', function(e) {
+        if (e.target.classList.contains('account-info') || 
+            e.target.classList.contains('password-info')) {
+            e.preventDefault();
+        }
+    });
+
+    // 查看按钮点击事件
+    document.querySelectorAll('.view-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var postId = btn.dataset.postId;
+            
+            // 检查是否可以查看账号
+            fetch('/check_account/' + postId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAccountInfo(btn);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('发生错误，请稍后重试');
+                });
+        });
+    });
+
+    // 显示账号信息
+    function showAccountInfo(btn) {
+        var row = btn.closest('tr').previousElementSibling;
+        var accountCell = row.querySelector('.account-info');
+        var passwordCell = row.querySelector('.password-info');
+        var copyAccountBtn = btn.parentElement.querySelector('.copy-account-btn');
+        var copyPasswordBtn = btn.parentElement.querySelector('.copy-password-btn');
+        
+        // 显示账号密码
+        accountCell.textContent = btn.dataset.account;
+        passwordCell.textContent = btn.dataset.password;
+        
+        // 显示复制按钮
+        copyAccountBtn.style.display = 'inline-block';
+        copyPasswordBtn.style.display = 'inline-block';
+        
+        // 10秒后隐藏
+        setTimeout(function() {
+            accountCell.textContent = '*****';
+            passwordCell.textContent = '*****';
+            copyAccountBtn.style.display = 'none';
+            copyPasswordBtn.style.display = 'none';
+        }, 10000);
+    }
+
+    // 复制账号按钮点击事件
+    document.querySelectorAll('.copy-account-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var viewBtn = btn.parentElement.querySelector('.view-btn');
+            navigator.clipboard.writeText(viewBtn.dataset.account).then(function() {
+                alert('账号已复制到剪贴板');
+            });
+        });
+    });
+
+    // 复制密码按钮点击事件
+    document.querySelectorAll('.copy-password-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var viewBtn = btn.parentElement.querySelector('.view-btn');
+            navigator.clipboard.writeText(viewBtn.dataset.password).then(function() {
+                alert('密码已复制到剪贴板');
+            });
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

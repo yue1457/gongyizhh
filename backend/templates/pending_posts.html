@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>待审核账号</h2>
+    {% if posts %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>账号</th>
+                    <th>密码</th>
+                    <th>到期时间</th>
+                    <th>备注</th>
+                    <th>发布者</th>
+                    <th>发布时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in posts %}
+                <tr id="post-{{ post.id }}">
+                    <td>{{ post.account_name }}</td>
+                    <td>{{ post.password }}</td>
+                    <td>
+                        <input type="datetime-local" class="form-control expire-date" 
+                               value="{{ post.expire_date }}" 
+                               data-post-id="{{ post.id }}">
+                    </td>
+                    <td>{{ post.content }}</td>
+                    <td>{{ post.author }}</td>
+                    <td>{{ post.created_at }}</td>
+                    <td>
+                        <button class="btn btn-success btn-sm approve-btn" data-post-id="{{ post.id }}">通过</button>
+                        <button class="btn btn-danger btn-sm reject-btn" data-post-id="{{ post.id }}">拒绝</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        暂无待审核的账号
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 通过按钮点击事件
+    document.querySelectorAll('.approve-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var postId = this.dataset.postId;
+            var expireDate = document.querySelector(`.expire-date[data-post-id="${postId}"]`).value;
+            
+            if (!expireDate) {
+                alert('请设置到期时间');
+                return;
+            }
+            
+            fetch('/approve_post/' + postId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    expire_date: expireDate
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('post-' + postId).remove();
+                    if (document.querySelectorAll('tbody tr').length === 0) {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.message || '操作失败');
+                }
+            });
+        });
+    });
+
+    // 拒绝按钮点击事件
+    document.querySelectorAll('.reject-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (!confirm('确定要拒绝这个账号吗？')) {
+                return;
+            }
+            var postId = this.dataset.postId;
+            fetch('/reject_post/' + postId, {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('post-' + postId).remove();
+                    if (document.querySelectorAll('tbody tr').length === 0) {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.message || '操作失败');
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
